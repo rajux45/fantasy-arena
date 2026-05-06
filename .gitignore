@@ -69,3 +69,4 @@ uploads/
 tmp/
 backend/local.db
 test-plan.md
+.vercel
