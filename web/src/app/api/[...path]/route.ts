@@ -8,6 +8,12 @@ import { NextRequest, NextResponse } from 'next/server';
  * Set `API_PROXY_TARGET` to the upstream base URL (with `https://user:pw@host`
  * if needed) and `API_PROXY_BASIC` to a separately-supplied `user:password`
  * pair if you would rather the credentials live in an Authorization header.
+ *
+ * Known limitation when fronting a tunnel that requires its OWN Basic Auth on
+ * the `Authorization` header (like Devin preview tunnels): the upstream backend
+ * also reads the same header for `Authorization: Bearer <jwt>`. Since HTTP only
+ * has one Authorization header, you can either authenticate the tunnel OR the
+ * backend, not both. For local/staging deploys (Vercel/Fly) this isn't an issue.
  */
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +22,6 @@ const TARGET = process.env.API_PROXY_TARGET || 'http://localhost:8000';
 const BASIC = process.env.API_PROXY_BASIC || '';
 
 function buildUrl(target: string, segments: string[], search: string): { url: string; auth: string | null } {
-  // If TARGET embeds credentials, strip them and emit an Authorization header.
   let auth: string | null = null;
   let cleanTarget = target;
   try {
@@ -49,7 +54,11 @@ async function proxy(req: NextRequest, segments: string[]): Promise<Response> {
     if (k === 'host' || k === 'cookie' || k === 'connection' || k === 'content-length') continue;
     headers.set(k, v);
   }
-  if (auth) headers.set('authorization', auth);
+  // If TARGET embeds Basic credentials AND the client did not already supply
+  // its own Authorization header, set Basic. If the client already supplied a
+  // Bearer JWT, leave it alone — the upstream service will use the Bearer token
+  // and (in the absence of tunnel auth) will work normally.
+  if (auth && !headers.has('authorization')) headers.set('authorization', auth);
 
   let body: BodyInit | undefined;
   if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -64,7 +73,6 @@ async function proxy(req: NextRequest, segments: string[]): Promise<Response> {
   });
 
   const respHeaders = new Headers(upstream.headers);
-  // Strip hop-by-hop headers
   respHeaders.delete('content-encoding');
   respHeaders.delete('content-length');
   respHeaders.delete('transfer-encoding');
