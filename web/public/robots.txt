@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin
+Disallow: /wallet
+Disallow: /kyc
+Disallow: /profile
+
+Sitemap: /sitemap.xml

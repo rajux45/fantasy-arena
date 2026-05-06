@@ -1,0 +1,1 @@
+"""Fantasy Arena backend package."""
