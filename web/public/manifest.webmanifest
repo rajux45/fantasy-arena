@@ -1,0 +1,64 @@
+{
+  "name": "Fantasy Arena",
+  "short_name": "Fantasy Arena",
+  "description": "India ka biggest fantasy sports + social casino. Skill-based, legal, and provably fair.",
+  "start_url": "/lobby",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": ["sports", "games", "entertainment"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Cricket Lobby",
+      "short_name": "Cricket",
+      "description": "Browse upcoming cricket matches",
+      "url": "/lobby?sport=cricket",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Casino",
+      "short_name": "Casino",
+      "description": "Play-money provably-fair casino",
+      "url": "/casino",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Wallet",
+      "short_name": "Wallet",
+      "description": "Deposit, withdraw, and view ledger",
+      "url": "/wallet",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
