@@ -70,3 +70,8 @@ tmp/
 backend/local.db
 test-plan.md
 .vercel
+
+# SQLite databases (dev/test/prod-on-sandbox)
+*.db
+*.sqlite
+*.sqlite3
