@@ -11,7 +11,9 @@ export function Nav() {
         <div className="flex items-center gap-4 text-sm text-slate-300">
           <Link href="/lobby" className="hover:text-white">Lobby</Link>
           <Link href="/casino" className="hover:text-white">Casino</Link>
+          <Link href="/leaderboard" className="hidden hover:text-white md:inline">Leaderboard</Link>
           <Link href="/wallet" className="hover:text-white">Wallet</Link>
+          <Link href="/responsible" className="hidden hover:text-white md:inline">Limits</Link>
           <Link href="/profile" className="hover:text-white">Profile</Link>
           <Link href="/auth/login" className="btn-primary text-sm">Log in</Link>
         </div>

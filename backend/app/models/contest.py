@@ -19,6 +19,7 @@ from app.db import Base
 from app.models._mixins import TimestampMixin
 from app.models._types import JSONB
 from app.models._types import UUID as PgUUID
+from app.models.wallet import SqliteFriendlyBigInt
 
 
 class ContestKind(enum.StrEnum):
@@ -75,7 +76,7 @@ class Contest(Base, TimestampMixin):
 class PrizeSlab(Base):
     __tablename__ = "prize_slabs"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(SqliteFriendlyBigInt, primary_key=True, autoincrement=True)
     contest_id: Mapped[uuid.UUID] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("contests.id", ondelete="CASCADE"),
         nullable=False, index=True,

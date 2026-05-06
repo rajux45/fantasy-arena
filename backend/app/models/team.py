@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import BigInteger, Boolean, ForeignKey, Numeric, String, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
 from app.models._mixins import TimestampMixin
 from app.models._types import UUID as PgUUID
+from app.models.wallet import SqliteFriendlyBigInt
 
 
 class UserTeam(Base, TimestampMixin):
@@ -38,7 +39,7 @@ class UserTeamPlayer(Base):
         UniqueConstraint("team_id", "player_id", name="uq_utp_team_player"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(SqliteFriendlyBigInt, primary_key=True, autoincrement=True)
     team_id: Mapped[uuid.UUID] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("user_teams.id", ondelete="CASCADE"),
         nullable=False, index=True,
