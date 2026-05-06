@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Fantasy Arena",
+    "slug": "fantasy-arena",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "fantasy-arena",
+    "platforms": ["ios", "android"],
+    "splash": {
+      "backgroundColor": "#0f172a"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.rajux45.fantasyarena"
+    },
+    "android": {
+      "package": "com.rajux45.fantasyarena"
+    },
+    "extra": {
+      "apiBaseUrl": "http://localhost:8000"
+    }
+  }
+}
