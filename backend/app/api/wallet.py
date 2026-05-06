@@ -143,7 +143,13 @@ def verify_deposit(
     db: Session = Depends(get_db),
     meta: dict = Depends(get_request_meta),
 ):
-    payment = db.get(Payment, uuid.UUID(payload.payment_id))
+    # Row-level lock so two concurrent /verify calls cannot both pass the
+    # "status == created" check and double-credit the wallet.
+    payment = db.execute(
+        select(Payment)
+        .where(Payment.id == uuid.UUID(payload.payment_id))
+        .with_for_update()
+    ).scalar_one_or_none()
     if payment is None or payment.user_id != user.id:
         raise HTTPException(404, "payment not found")
     if payment.status == PaymentStatus.captured:

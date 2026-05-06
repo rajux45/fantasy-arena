@@ -5,8 +5,9 @@ from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from app.deps import get_current_user, get_db
-from app.models.casino import CasinoGameSlug, CasinoRound
+from app.models.casino import CasinoGameSlug, CasinoRound, CasinoSeed
 from app.models.user import User
+from app.models.wallet import Pocket
 from app.schemas.casino import BetIn, CoinPackagePurchase, RoundOut, SeedInfo, SeedRotateOut
 from app.services import casino_service, wallet_service
 
@@ -49,7 +50,7 @@ def purchase_package(
             wallet_service.Leg(
                 account=f"user:{user.id}:deposit", amount_paise=-pkg["price_paise"],
                 user_id=user.id,
-                pocket=__import__("app.models.wallet", fromlist=["Pocket"]).Pocket.deposit,
+                pocket=Pocket.deposit,
             ),
             wallet_service.Leg(
                 account="system:casino_revenue", amount_paise=pkg["price_paise"],
@@ -76,10 +77,9 @@ def my_seed(user: User = Depends(get_current_user), db: Session = Depends(get_db
 def rotate_seed(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     # We need the prior seed's value before rotation.
     prev = db.execute(
-        select(__import__("app.models.casino", fromlist=["CasinoSeed"]).CasinoSeed)
-        .where(
-            __import__("app.models.casino", fromlist=["CasinoSeed"]).CasinoSeed.user_id == user.id,
-            __import__("app.models.casino", fromlist=["CasinoSeed"]).CasinoSeed.is_revealed == False,  # noqa: E712
+        select(CasinoSeed).where(
+            CasinoSeed.user_id == user.id,
+            CasinoSeed.is_revealed.is_(False),
         )
     ).scalar_one_or_none()
     revealed = prev.server_seed if prev else None

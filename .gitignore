@@ -67,3 +67,5 @@ yarn-error.log*
 storage/
 uploads/
 tmp/
+backend/local.db
+test-plan.md
