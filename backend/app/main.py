@@ -19,16 +19,28 @@ from app.api import (
     kyc as kyc_api,
 )
 from app.api import (
+    leaderboard as leaderboard_api,
+)
+from app.api import (
     matches as matches_api,
 )
 from app.api import (
     notifications as notifications_api,
 )
 from app.api import (
+    promotions as promotions_api,
+)
+from app.api import (
+    referrals as referrals_api,
+)
+from app.api import (
     responsible as responsible_api,
 )
 from app.api import (
     teams as teams_api,
+)
+from app.api import (
+    tournaments as tournaments_api,
 )
 from app.api import wallet as wallet_api
 from app.api import (
@@ -83,6 +95,10 @@ def create_app() -> FastAPI:
     app.include_router(casino_api.router)
     app.include_router(responsible_api.router)
     app.include_router(notifications_api.router)
+    app.include_router(promotions_api.router)
+    app.include_router(referrals_api.router)
+    app.include_router(tournaments_api.router)
+    app.include_router(leaderboard_api.router)
     app.include_router(admin_api.router)
     app.include_router(webhooks_api.router)
     app.include_router(ws_api.router)

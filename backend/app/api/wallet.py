@@ -154,11 +154,13 @@ def verify_deposit(
     ):
         raise HTTPException(400, "invalid signature")
 
-    # Credit deposit pocket; record GST liability
+    # Money flow: external bank funds the deposit; user gets net into deposit pocket;
+    # the GST portion is moved into a system payable account.
+    # Σ legs == 0 (ext:bank_in -amount, user:deposit +net, system:gst_payable +gst).
     legs = [
         wallet_service.Leg(
-            account="gateway:razorpay", amount_paise=payment.amount_paise,
-            meta={"gateway_order_id": payment.gateway_order_id},
+            account="ext:bank_in", amount_paise=-payment.amount_paise,
+            meta={"gateway": "razorpay", "gateway_payment_id": payload.razorpay_payment_id},
         ),
         wallet_service.Leg(
             account=f"user:{user.id}:deposit", amount_paise=payment.net_paise,
@@ -166,20 +168,9 @@ def verify_deposit(
         ),
     ]
     if payment.gst_paise:
-        legs.append(wallet_service.Leg(account="system:gst_payable", amount_paise=payment.gst_paise))
-    legs.append(wallet_service.Leg(
-        account="gateway:razorpay", amount_paise=-payment.amount_paise,
-        meta={"gateway_payment_id": payload.razorpay_payment_id},
-    ))
-    legs.append(wallet_service.Leg(
-        account="ext:bank_in", amount_paise=payment.amount_paise,
-        meta={"gateway": "razorpay"},
-    ))
-    legs.append(wallet_service.Leg(
-        account="ext:bank_in", amount_paise=-payment.amount_paise,
-    ))
-    # The above keeps bank_in zeroed; sufficient for ledger correctness in MVP.
-    # In production, posting strategy is split between settlement bank and pocket on T+1.
+        legs.append(wallet_service.Leg(
+            account="system:gst_payable", amount_paise=payment.gst_paise,
+        ))
 
     txn_id = wallet_service.post_txn(db, kind="deposit.captured", legs=legs)
     payment.gateway_payment_id = payload.razorpay_payment_id
@@ -240,21 +231,23 @@ def request_withdrawal(
         tds_already_paid_paise=tds_paid,
     )
 
+    # hold funds: move requested amount from deposit/winnings -> withdraw_holding
+    deposit_used = min(w.deposit_paise, payload.amount_paise)
+    winnings_used = payload.amount_paise - deposit_used
+
     wd = Withdrawal(
         user_id=user.id,
         amount_paise=payload.amount_paise,
         tds_paise=tds,
         payout_paise=payout,
+        deposit_used_paise=deposit_used,
+        winnings_used_paise=winnings_used,
         bank_account_last4=payload.bank_account_last4,
         ifsc=payload.ifsc,
         account_holder=payload.account_holder,
         status=WithdrawalStatus.requested,
     )
     db.add(wd)
-
-    # hold funds: move requested amount from deposit/winnings -> withdraw_holding
-    deposit_used = min(w.deposit_paise, payload.amount_paise)
-    winnings_used = payload.amount_paise - deposit_used
     legs = []
     if deposit_used:
         legs.append(wallet_service.Leg(

@@ -140,6 +140,10 @@ class Withdrawal(Base, TimestampMixin):
     amount_paise: Mapped[int] = mapped_column(BigInteger, nullable=False)
     tds_paise: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
     payout_paise: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    # Pocket breakdown: how much of `amount_paise` was sourced from each pocket.
+    # Required so that on reject we can restore the original pocket composition.
+    deposit_used_paise: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    winnings_used_paise: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
 
     bank_account_last4: Mapped[str | None] = mapped_column(String(4), nullable=True)
     ifsc: Mapped[str | None] = mapped_column(String(15), nullable=True)

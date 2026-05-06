@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import ROUND_DOWN, Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -96,8 +97,11 @@ def create_private(
     match = db.get(Match, payload.match_id)
     if match is None:
         raise HTTPException(404, "match not found")
+    # Decimal arithmetic for paise; floor to integer paise (rake takes the residue).
+    rake = Decimal(str(payload.rake_pct))
+    gross = Decimal(payload.entry_fee_paise) * Decimal(payload.total_slots)
     prize_pool = int(
-        payload.entry_fee_paise * payload.total_slots * (1 - payload.rake_pct / 100.0)
+        (gross * (Decimal(100) - rake) / Decimal(100)).quantize(Decimal(1), rounding=ROUND_DOWN)
     )
     c = Contest(
         match_id=match.id,

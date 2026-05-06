@@ -43,3 +43,5 @@ class SelfExclusion(Base, TimestampMixin):
     is_permanent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     scope: Mapped[str] = mapped_column(String(20), default="all", nullable=False)
     reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # True once the worker has processed expiry; prevents repeated reactivations.
+    processed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)

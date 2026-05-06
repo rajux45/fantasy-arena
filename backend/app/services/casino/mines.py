@@ -31,23 +31,32 @@ def _multiplier(bombs: int, picks: int, edge_bp: int = 200) -> float:
 
 
 def play(*, rng: Rng, bet_coins: int, bet_input: dict):
-    """One round: server simulates `picks_count` safe tile reveals."""
+    """Auto-resolve: server places bombs, then picks `picks_count` random tiles
+    from the *full* grid. If any pick lands on a bomb, the player loses (payout 0).
+    Otherwise the player wins `multiplier * bet`.
+
+    Survival probability is C(25-bombs, picks) / C(25, picks); the multiplier on
+    survival is its inverse minus a small house edge, so EV is approximately
+    (1 - edge) * bet.
+    """
     from app.services.casino import Outcome
 
     bombs = max(1, min(int(bet_input.get("bombs", 3)), 24))
     picks_count = max(1, min(int(bet_input.get("picks", 3)), GRID - bombs))
 
     bomb_positions = _bomb_positions(rng, bombs)
-    revealed: list[int] = []
-    safe_pool = [i for i in range(GRID) if i not in bomb_positions]
+    bomb_set = set(bomb_positions)
 
+    pool = list(range(GRID))
+    picks: list[int] = []
     survived = True
     for _ in range(picks_count):
-        # Server reveals random safe tile
-        if not safe_pool:
+        idx = rng.randint(0, len(pool) - 1)
+        tile = pool.pop(idx)
+        picks.append(tile)
+        if tile in bomb_set:
+            survived = False
             break
-        idx = rng.randint(0, len(safe_pool) - 1)
-        revealed.append(safe_pool.pop(idx))
 
     if not survived:
         multiplier, payout = 0.0, 0
@@ -58,5 +67,5 @@ def play(*, rng: Rng, bet_coins: int, bet_input: dict):
     return Outcome(
         multiplier=multiplier,
         payout_coins=payout,
-        detail={"bombs": bomb_positions, "picks": revealed},
+        detail={"bombs": bomb_positions, "picks": picks, "survived": survived},
     )

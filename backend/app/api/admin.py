@@ -195,16 +195,32 @@ def reject_withdrawal(
     wd = db.get(Withdrawal, withdrawal_id)
     if wd is None:
         raise HTTPException(404, "withdrawal not found")
-    # Restore balance from holding back to deposit pocket
-    legs = [
+    if wd.status not in {WithdrawalStatus.requested, WithdrawalStatus.in_review}:
+        raise HTTPException(400, "invalid status transition")
+
+    # Restore balance to original pockets so deposit / winnings split is preserved.
+    legs: list[wallet_service.Leg] = [
         wallet_service.Leg(
             account=f"system:withdraw_holding:{wd.user_id}", amount_paise=-wd.amount_paise,
         ),
-        wallet_service.Leg(
+    ]
+    if wd.deposit_used_paise:
+        legs.append(wallet_service.Leg(
+            account=f"user:{wd.user_id}:deposit", amount_paise=wd.deposit_used_paise,
+            user_id=wd.user_id, pocket=Pocket.deposit,
+        ))
+    if wd.winnings_used_paise:
+        legs.append(wallet_service.Leg(
+            account=f"user:{wd.user_id}:winnings", amount_paise=wd.winnings_used_paise,
+            user_id=wd.user_id, pocket=Pocket.winnings,
+        ))
+    # Backwards-compat: legacy rows where pocket breakdown was not recorded
+    # restore the entire amount to the deposit pocket (matches previous behaviour).
+    if not wd.deposit_used_paise and not wd.winnings_used_paise and wd.amount_paise:
+        legs.append(wallet_service.Leg(
             account=f"user:{wd.user_id}:deposit", amount_paise=wd.amount_paise,
             user_id=wd.user_id, pocket=Pocket.deposit,
-        ),
-    ]
+        ))
     wallet_service.post_txn(db, kind="withdraw.rejected", legs=legs)
     wd.status = WithdrawalStatus.rejected
     wd.rejection_reason = payload.reason
