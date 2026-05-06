@@ -51,8 +51,10 @@ class Settings(BaseSettings):
     sentry_dsn: str = ""
 
     rg_daily_deposit_limit: int = Field(default=2_500_000)  # paise
-    withdrawal_min_paise: int = 10_000
-    withdrawal_max_paise: int = 10_000_000
+    deposit_min_paise: int = 10_000          # ₹100
+    deposit_max_paise: int = 10_000_000      # ₹1,00,000
+    withdrawal_min_paise: int = 10_000       # ₹100
+    withdrawal_max_paise: int = 10_000_000   # ₹1,00,000
 
     @property
     def cors_origin_list(self) -> list[str]:

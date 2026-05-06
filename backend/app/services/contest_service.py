@@ -36,6 +36,17 @@ def join_contest(
     contest: Contest,
     team: UserTeam,
 ) -> JoinReceipt:
+    # Re-fetch the contest under a row-level lock so concurrent joiners cannot
+    # both pass the `filled_slots < total_slots` check (TOCTOU). On Postgres
+    # this becomes `SELECT ... FOR UPDATE`; on SQLite (test/dev) the lock is a
+    # no-op but the surrounding session still serialises writes via its WAL.
+    locked = db.execute(
+        select(Contest).where(Contest.id == contest.id).with_for_update()
+    ).scalar_one_or_none()
+    if locked is None:
+        raise ContestError("contest no longer exists")
+    contest = locked
+
     if contest.status not in {ContestStatus.open}:
         raise ContestError("contest is not open")
     match: Match | None = db.get(Match, contest.match_id)

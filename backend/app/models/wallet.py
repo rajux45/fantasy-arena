@@ -14,6 +14,7 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    func,
 )
 
 # SQLite needs INTEGER for AUTOINCREMENT primary keys; BigInteger works on Postgres.
@@ -76,7 +77,7 @@ class LedgerEntry(Base):
     meta: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=datetime.utcnow
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
 

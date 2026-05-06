@@ -83,9 +83,9 @@ def create_deposit(
     db: Session = Depends(get_db),
     meta: dict = Depends(get_request_meta),
 ):
-    if payload.amount_paise < settings.withdrawal_min_paise:
+    if payload.amount_paise < settings.deposit_min_paise:
         raise HTTPException(400, "amount below minimum")
-    if payload.amount_paise > settings.withdrawal_max_paise:
+    if payload.amount_paise > settings.deposit_max_paise:
         raise HTTPException(400, "amount above maximum")
 
     if payload.idempotency_key:

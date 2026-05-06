@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/v1/tournaments", tags=["tournaments"])
@@ -35,8 +35,8 @@ def list_tournaments(sport: str | None = None, status: str | None = None) -> lis
 
 
 @router.get("/{tournament_id}", response_model=Tournament)
-def detail(tournament_id: str) -> Tournament | None:
+def detail(tournament_id: str) -> Tournament:
     for t in _STATIC_TOURNAMENTS:
         if t.id == tournament_id:
             return t
-    return None
+    raise HTTPException(status_code=404, detail="tournament not found")

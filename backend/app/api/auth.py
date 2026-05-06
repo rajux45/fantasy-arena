@@ -143,6 +143,8 @@ def login_phone(payload: LoginPhone, db: Session = Depends(get_db), meta: dict =
         db.flush()
         _bootstrap_user(db, user)
     else:
+        if not user.is_active:
+            raise HTTPException(403, "account disabled")
         user.is_phone_verified = True
     write_audit(db, actor_user_id=user.id, action="auth.login_phone", **meta)
     return _issue_tokens(db, user, meta)

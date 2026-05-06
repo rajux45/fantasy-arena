@@ -86,6 +86,69 @@ def test_mines_can_lose() -> None:
     assert losses > wins, "expected losses to dominate at 24 bombs"
 
 
+def test_login_phone_blocks_inactive_users(monkeypatch) -> None:
+    """Banned users (is_active=False) must not be issued tokens via OTP login
+    (regression: PR #1 review #3194022843).
+    """
+    from fastapi import HTTPException
+
+    from app.api import auth as auth_api
+    from app.schemas.auth import LoginPhone
+
+    # Build a mock session-like object.
+    class _DBStub:
+        def __init__(self, user):
+            self._user = user
+
+        def execute(self, _stmt):
+            class _Result:
+                def __init__(self, u):
+                    self._u = u
+
+                def scalar_one_or_none(self):
+                    return self._u
+
+            return _Result(self._user)
+
+        def add(self, _x):
+            return None
+
+        def flush(self):
+            return None
+
+        def commit(self):
+            return None
+
+    user = User(
+        id=uuid.uuid4(),
+        phone="+919999999999",
+        role=UserRole.user,
+        referral_code=gen_referral_code(),
+        is_active=False,
+    )
+
+    monkeypatch.setattr(auth_api.otp_service, "verify_otp", lambda *a, **k: True)
+    monkeypatch.setattr(auth_api, "write_audit", lambda *a, **k: None)
+
+    payload = LoginPhone(phone="+919999999999", otp="123456")
+    with pytest.raises(HTTPException) as exc:
+        auth_api.login_phone(payload, db=_DBStub(user), meta={})
+    assert exc.value.status_code == 403
+
+
+def test_tournament_detail_404_for_unknown_id() -> None:
+    """detail() must raise HTTPException(404), not return None
+    (regression: PR #1 review #3194022946).
+    """
+    from fastapi import HTTPException
+
+    from app.api.tournaments import detail
+
+    with pytest.raises(HTTPException) as exc:
+        detail("does-not-exist")
+    assert exc.value.status_code == 404
+
+
 def test_mines_default_config_can_lose() -> None:
     """Default 3-bomb / 3-pick config must also have realistic survival
     (regression: PR #1 review #3193952023).
