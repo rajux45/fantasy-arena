@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import or_, select
+from sqlalchemy import desc, or_, select
 
 from app.db import SessionLocal
 from app.logging_config import get_logger
@@ -63,7 +63,8 @@ def expire_self_exclusions() -> int:
     Skips users that:
       - have a newer non-permanent exclusion still in force,
       - have any permanent exclusion,
-      - were banned by an admin (presence of an `admin.user_ban` audit event).
+      - are currently admin-banned (most recent audit row is `admin.user_ban`,
+        i.e. a later `admin.user_unban` has not undone it).
 
     Each processed exclusion is flagged so we never reprocess it on later runs.
     """
@@ -97,15 +98,17 @@ def expire_self_exclusions() -> int:
             if other is not None:
                 continue
 
-            # Skip if user was banned by an admin.
-            ban = db.execute(
+            # Skip if the most recent admin ban/unban is still a ban. Audit
+            # logs are append-only, so we look at the latest entry instead of
+            # treating any historical ban as permanent.
+            latest_admin_action = db.execute(
                 select(AuditLog).where(
-                    AuditLog.action == "admin.user_ban",
+                    AuditLog.action.in_(("admin.user_ban", "admin.user_unban")),
                     AuditLog.target_type == "user",
                     AuditLog.target_id == str(se.user_id),
-                ).limit(1)
+                ).order_by(desc(AuditLog.created_at), desc(AuditLog.id)).limit(1)
             ).scalar_one_or_none()
-            if ban is not None:
+            if latest_admin_action is not None and latest_admin_action.action == "admin.user_ban":
                 continue
 
             user = db.get(User, se.user_id)

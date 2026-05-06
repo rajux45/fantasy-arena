@@ -154,6 +154,11 @@ def verify_deposit(
         raise HTTPException(404, "payment not found")
     if payment.status == PaymentStatus.captured:
         return my_wallet(user, db)
+    # Reject payments in any non-`created` terminal state (failed / refunded /
+    # expired). Without this the endpoint would happily re-credit a wallet for
+    # a payment a webhook had already marked failed, given a valid signature.
+    if payment.status != PaymentStatus.created:
+        raise HTTPException(400, f"payment is {payment.status.value}; cannot verify")
 
     if not payment_service.verify_payment_signature(
         payload.razorpay_order_id, payload.razorpay_payment_id, payload.razorpay_signature

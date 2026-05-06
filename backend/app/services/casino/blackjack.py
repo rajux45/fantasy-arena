@@ -54,12 +54,18 @@ def play(*, rng: Rng, bet_coins: int, bet_input: dict):
         dealer.append(deck.pop())
 
     p, d = _hand_value(player), _hand_value(dealer)
-    blackjack = (len(player) == 2 and p == 21)
+    player_blackjack = (len(player) == 2 and p == 21)
+    dealer_blackjack = (len(dealer) == 2 and d == 21)
 
     if p > 21:
         multiplier = 0.0
+    elif dealer_blackjack and not player_blackjack:
+        # Dealer's natural 21 beats a non-natural player 21 (and any other
+        # player hand that isn't itself a natural). Without this, the `p == d`
+        # branch below would pay out a push when both totals were 21.
+        multiplier = 0.0
     elif d > 21 or p > d:
-        multiplier = 2.5 if blackjack else 2.0
+        multiplier = 2.5 if player_blackjack else 2.0
     elif p == d:
         multiplier = 1.0  # push
     else:
@@ -69,5 +75,12 @@ def play(*, rng: Rng, bet_coins: int, bet_input: dict):
     return Outcome(
         multiplier=multiplier,
         payout_coins=payout,
-        detail={"player": player, "dealer": dealer, "p": p, "d": d, "blackjack": blackjack},
+        detail={
+            "player": player,
+            "dealer": dealer,
+            "p": p,
+            "d": d,
+            "player_blackjack": player_blackjack,
+            "dealer_blackjack": dealer_blackjack,
+        },
     )

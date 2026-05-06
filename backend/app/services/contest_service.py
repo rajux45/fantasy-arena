@@ -14,7 +14,6 @@ from app.models.user import User
 from app.models.wallet import Pocket
 from app.services import wallet_service
 from app.services.geo_service import is_fantasy_real_money_allowed
-from app.services.tax_service import compute_gst_on_entry
 
 
 class ContestError(Exception):
@@ -75,7 +74,12 @@ def join_contest(
         raise ContestError("contest is full")
 
     fee = contest.entry_fee_paise
-    gst = compute_gst_on_entry(fee) if fee > 0 else 0
+    # GST is collected once, inclusive, at deposit time (see
+    # tax_service.split_gst_inclusive + verify_deposit). Charging it again on
+    # the contest-join leg would double-tax the same money — the user has
+    # already deposited GST-inclusive paise, so the full `fee` flows from
+    # wallet straight into the contest pool.
+    gst = 0
 
     txn_id: uuid.UUID | None = None
     if fee > 0:
@@ -101,11 +105,9 @@ def join_contest(
                                            amount_paise=-winnings_used, user_id=user.id, pocket=Pocket.winnings))
 
         legs.append(wallet_service.Leg(
-            account=f"system:contest_pool:{contest.id}", amount_paise=fee - gst,
+            account=f"system:contest_pool:{contest.id}", amount_paise=fee,
             meta={"contest_id": str(contest.id)},
         ))
-        if gst:
-            legs.append(wallet_service.Leg(account="system:gst_payable", amount_paise=gst))
 
         txn_id = wallet_service.post_txn(db, kind="contest.join", legs=legs)
 
